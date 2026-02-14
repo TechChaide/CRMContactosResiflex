@@ -14,6 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { menuService } from '@/services/menu.service';
 import { useToast } from '@/hooks/use-toast';
+import { environment } from '@/environments/environments.prod';
 // (LogoutButton preserved in repo but not used here; we implement custom panel UI)
 
 
@@ -137,8 +138,8 @@ const RecursiveMenu = ({ items, level = 0 }: { items: any[], level?: number }) =
                     ) : (
                         <SidebarMenuItem>
                             <SidebarMenuButton
-                                href={item.path || '#'}
-                                active={item.path && pathname?.startsWith(item.path)}
+                                href={item.path ? `${environment.basePath}${item.path}` : '#'}
+                                active={item.path ? pathname?.startsWith(`${environment.basePath}${item.path}`) : false}
                                 className={isCollapsed ? 'h-10 w-10 justify-center' : 'justify-start pl-4 h-9'}
                                 title={isCollapsed ? item.label : undefined}
                             >
@@ -159,13 +160,13 @@ function LogoSection() {
     if (isCollapsed) {
         return (
             <div className="flex items-center justify-center py-4">
-                <Image src="/img/Chide.svg" alt="Chaide Logo" width={40} height={40} />
+                <Image src={`${environment.basePath}/img/Chide.svg`} alt="Chaide Logo" width={40} height={40} />
             </div>
         );
     }
     return (
         <div className="flex items-center justify-center py-4">
-            <Image src="/img/logo_chaide.svg" alt="Chaide Logo" width={170} height={46} />
+            <Image src={`${environment.basePath}/img/logo_chaide.svg`} alt="Chaide Logo" width={170} height={46} />
         </div>
     );
 }
@@ -225,7 +226,7 @@ function UserPanel() {
         } catch (error) {
             console.error('Error al limpiar localStorage:', error);
         }
-        window.location.href = '/';
+        window.location.href = `${environment.basePath}/`;
     };
 
     if (isCollapsed) {
@@ -299,7 +300,7 @@ export default function DashboardLayout({
                         description: "No se encontraron códigos válidos en tus perfiles autorizados",
                         variant: "destructive",
                     });
-                    router.push('/');
+                    router.push(`${environment.basePath}/`);
                     return;
                 }
                 // Llamadas en paralelo; ignorar individuales fallidas pero registrar si todas fallan
@@ -320,7 +321,7 @@ export default function DashboardLayout({
                         description: "No se pudo cargar el menú para tus perfiles. Contacta al administrador del sistema",
                         variant: "destructive",
                     });
-                    router.push('/');
+                    router.push(`${environment.basePath}/`);
                     return;
                 } else {
                     const merged = mergeMenuTrees(results);
@@ -334,7 +335,7 @@ export default function DashboardLayout({
                             description: "No tienes opciones de menú activas disponibles",
                             variant: "destructive",
                         });
-                        router.push('/');
+                        router.push(`${environment.basePath}/`);
                         return;
                     }
                     
@@ -346,7 +347,7 @@ export default function DashboardLayout({
                     description: err?.message || 'Error inesperado al cargar el menú del sistema',
                     variant: "destructive",
                 });
-                router.push('/');
+                router.push(`${environment.basePath}/`);
             } finally {
                 setMenuLoading(false);
             }

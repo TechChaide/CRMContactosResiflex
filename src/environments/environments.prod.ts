@@ -6,6 +6,9 @@
 export const environment = {
     production: true,
     nombreAplicacion: "APP_BASE",
+
+    basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
+
     //apiURL : '/seguridades/api',
     //apiURL : 'http://localhost:5400',
     apiURL : 'https://apps.chaide.com/seguridades',

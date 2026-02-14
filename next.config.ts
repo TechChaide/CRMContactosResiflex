@@ -1,6 +1,11 @@
+import { environment } from '@/environments/environments.prod';
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+
+  basePath: environment.basePath,
+
+  output: 'standalone',
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,

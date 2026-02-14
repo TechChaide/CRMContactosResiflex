@@ -18,7 +18,7 @@ function ChaideLogo() {
     <div className="flex flex-col items-center justify-center text-white">
       <div className="flex flex-col items-center gap-4">
         <Image
-          src="/img/logo_chaide.svg"
+          src={`${environment.basePath}/img/logo_chaide.svg`}
           alt="Chaide Logo"
           width={300}
           height={300}
@@ -131,7 +131,7 @@ export default function LoginPage() {
                                     return;
                                 }
 
-                                window.location.href = '/dashboard';
+                                window.location.href = `${environment.basePath}/dashboard`;
                                 return;
                         }
 
@@ -161,7 +161,7 @@ export default function LoginPage() {
                     <CardHeader className="text-center">
                         <div className="flex justify-center items-center gap-2 mb-2">
                             <Image
-                                src="/img/Chide.svg"
+                                src={`${environment.basePath}/img/Chide.svg`}
                                 alt="Chaide Logo"
                                 width={46}
                                 height={46}
