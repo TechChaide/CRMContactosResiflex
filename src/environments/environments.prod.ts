@@ -5,7 +5,7 @@
 
 export const environment = {
     production: true,
-    nombreAplicacion: "APP_BASE",
+    nombreAplicacion: "APP_CRM_Contactos_Resiflex",
 
     basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
 

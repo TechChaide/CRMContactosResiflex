@@ -325,3 +325,4 @@
 .next/static/development/_ssgManifest.js
 .next/static/media/favicon.56766c03.ico
 package-lock.json
+node_modules
