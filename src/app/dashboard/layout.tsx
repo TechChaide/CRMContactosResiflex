@@ -9,7 +9,8 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { ChevronsUpDown, BookUser, Shield, Users, Settings, Building, MenuSquare, UserCog, UserPlus, Minus, LogOut, CircleUser, AppWindow } from 'lucide-react';
+import { ChevronsUpDown, Minus, LogOut, Shield } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { menuService } from '@/services/menu.service';
@@ -30,19 +31,19 @@ type MenuNode = {
     children?: MenuNode[];
 };
 
-// Mapa de iconos string -> componente Lucide
-const iconMap: Record<string, React.ComponentType<any>> = {
-    Shield,
-    BookUser,
-    Users,
-    Settings,
-    Building,
-    MenuSquare,
-    UserCog,
-    UserPlus,
-    CircleUser,
-    AppWindow,
-};
+// Resolver icono por nombre desde el namespace completo de lucide-react
+function getIcon(name: string): React.ComponentType<any> {
+    if (!name) return Shield;
+    // Intentar el nombre tal cual (ej: "BookUser", "Shield")
+    const direct = (LucideIcons as any)[name];
+    if (direct) return direct;
+    // Intentar con la primera letra mayúscula (ej: "shield" -> "Shield")
+    const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+    const cap = (LucideIcons as any)[capitalized];
+    if (cap) return cap;
+    // Fallback
+    return Shield;
+}
 
 // Fusionar árboles de menús por codigo_menu (recursivo)
 function mergeMenuTrees(trees: MenuNode[]): MenuNode[] {
@@ -92,7 +93,7 @@ function filterActive(nodes: MenuNode[]): MenuNode[] {
 // Transformar árbol backend -> estructura esperada por RecursiveMenu
 function toRecursiveItems(nodes: MenuNode[]): any[] {
     return nodes.map(n => {
-        const IconComp = iconMap[n.icono] || Shield;
+        const IconComp = getIcon(n.icono);
         const hasChildren = !!(n.children && n.children.length);
         // Reglas:
         // '.' => raíz (no navegable)
