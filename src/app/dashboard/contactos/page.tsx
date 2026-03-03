@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Save, Search, Copy, Loader2, RefreshCw, ChevronLeft, ChevronRight, Upload, FileSpreadsheet, X } from "lucide-react";
+import { Save, Search, Copy, Loader2, RefreshCw, ChevronLeft, ChevronRight, Upload, FileSpreadsheet, X, Pencil, XCircle } from "lucide-react";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 
@@ -225,6 +225,32 @@ export default function ContactosPage() {
   const [formCanal, setFormCanal] = useState("");
   const [guardando, setGuardando] = useState(false);
 
+  // -- MODO EDICIÓN --
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [idContactoEditando, setIdContactoEditando] = useState<number | null>(null);
+
+  const handleSeleccionarContacto = (contacto: ContactoResult) => {
+    setIdContactoEditando(contacto.id);
+    setFormCelular(contacto.celular ?? "");
+    setFormNombre(contacto.nombre_Completo ?? "");
+    setFormCiudad(contacto.ciudad ?? "");
+    setFormTipoProducto(contacto.tipo_Producto ?? "");
+    setFormObservacion(contacto.observacion ?? "");
+    setFormCanal(contacto.canal ?? "");
+    setModoEdicion(true);
+  };
+
+  const handleCancelarEdicion = () => {
+    setModoEdicion(false);
+    setIdContactoEditando(null);
+    setFormCelular("");
+    setFormNombre("");
+    setFormCiudad("");
+    setFormTipoProducto("");
+    setFormObservacion("");
+    setFormCanal("");
+  };
+
   // -- ESTADOS TABLA Y BÚSQUEDA DERECHA --
   const [contactos, setContactos] = useState<ContactoResult[]>([]);
   const [cargandoContactos, setCargandoContactos] = useState(false);
@@ -291,7 +317,7 @@ export default function ContactosPage() {
     setFormCiudad(val);
   };
 
-  // -- LÓGICA DE GUARDADO --
+  // -- LÓGICA DE GUARDADO / ACTUALIZACIÓN --
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formCelular || !formNombre || !formCiudad || !formTipoProducto || !formObservacion || !formCanal) {
@@ -301,71 +327,108 @@ export default function ContactosPage() {
 
     setGuardando(true);
     try {
-      const payload = {
-        celular: formCelular,
-        nombre_Completo: formNombre,
-        ciudad: formCiudad,
-        tipo_Producto: formTipoProducto,
-        observacion: formObservacion,
-        canal: formCanal,
-        usuario: usuarioActual,
-      };
+      if (modoEdicion && idContactoEditando !== null) {
+        // -- ACTUALIZAR --
+        const payload = {
+          id: String(idContactoEditando),
+          celular: formCelular,
+          nombre_completo: formNombre,
+          ciudad: formCiudad,
+          tipo_producto: formTipoProducto,
+          observacion: formObservacion,
+          canal: formCanal,
+          usuario: usuarioActual,
+        };
 
-      const res = await fetch(
-        "https://intranet.chaide.com:8050/ApiCRMContactosResiflex/api/ContactosWhatsapp",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!res.ok) throw new Error("Error en la respuesta del servidor");
-      const data = await res.json();
-
-      if (data && data.id) {
-        // Limpiamos formulario
-        setFormCelular("");
-        setFormNombre("");
-        setFormCiudad("");
-        setFormTipoProducto("");
-        setFormObservacion("");
-        setFormCanal("");
-
-        Swal.fire({
-          icon: "success",
-          title: "Contacto Guardado",
-          html: `
-            <p>ID Generado:</p>
-            <h2 style="font-size: 2.5rem; margin: 10px 0;"><strong>${data.id}</strong></h2>
-          `,
-          showCancelButton: true,
-          confirmButtonText: '<i class="lucide lucide-copy"></i> Copiar ID',
-          cancelButtonText: "Cerrar",
-          confirmButtonColor: "#1e3a8a", // bg-blue-900 equivalent
-        }).then((result) => {
-          if (result.isConfirmed) {
-            const idStr = data.id.toString();
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(idStr).then(() => {
-                Swal.fire("¡Copiado!", "El ID ha sido copiado al portapapeles.", "success");
-              }).catch(() => {
-                copyFallback(idStr);
-              });
-            } else {
-              copyFallback(idStr);
-            }
+        const res = await fetch(
+          "https://intranet.chaide.com:8050/ApiCRMContactosResiflex/api/ContactosWhatsapp/actualizar",
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
           }
-        });
+        );
 
-        // Recargamos datos base
-        cargarContactosInicial();
+        if (!res.ok) throw new Error("Error en la respuesta del servidor");
+        const data = await res.json();
+
+        if (data && data.message) {
+          handleCancelarEdicion();
+          Swal.fire({
+            icon: "success",
+            title: "Contacto Actualizado",
+            text: data.message,
+          });
+          cargarContactosInicial();
+        } else {
+          throw new Error("Respuesta inválida del servidor");
+        }
       } else {
-        throw new Error("Respuesta inválida del servidor");
+        // -- INSERTAR --
+        const payload = {
+          celular: formCelular,
+          nombre_Completo: formNombre,
+          ciudad: formCiudad,
+          tipo_Producto: formTipoProducto,
+          observacion: formObservacion,
+          canal: formCanal,
+          usuario: usuarioActual,
+        };
+
+        const res = await fetch(
+          "https://intranet.chaide.com:8050/ApiCRMContactosResiflex/api/ContactosWhatsapp",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        );
+
+        if (!res.ok) throw new Error("Error en la respuesta del servidor");
+        const data = await res.json();
+
+        if (data && data.id) {
+          setFormCelular("");
+          setFormNombre("");
+          setFormCiudad("");
+          setFormTipoProducto("");
+          setFormObservacion("");
+          setFormCanal("");
+
+          Swal.fire({
+            icon: "success",
+            title: "Contacto Guardado",
+            html: `
+              <p>ID Generado:</p>
+              <h2 style="font-size: 2.5rem; margin: 10px 0;"><strong>${data.id}</strong></h2>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="lucide lucide-copy"></i> Copiar ID',
+            cancelButtonText: "Cerrar",
+            confirmButtonColor: "#1e3a8a",
+          }).then((result) => {
+            if (result.isConfirmed) {
+              const idStr = data.id.toString();
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(idStr).then(() => {
+                  Swal.fire("¡Copiado!", "El ID ha sido copiado al portapapeles.", "success");
+                }).catch(() => {
+                  copyFallback(idStr);
+                });
+              } else {
+                copyFallback(idStr);
+              }
+            }
+          });
+
+          cargarContactosInicial();
+        } else {
+          throw new Error("Respuesta inválida del servidor");
+        }
       }
     } catch (error) {
       console.error(error);
-      Swal.fire("Error", "Ocurrió un problema al guardar el contacto.", "error");
+      Swal.fire("Error", modoEdicion ? "Ocurrió un problema al actualizar el contacto." : "Ocurrió un problema al guardar el contacto.", "error");
     } finally {
       setGuardando(false);
     }
@@ -539,11 +602,24 @@ export default function ContactosPage() {
           </CardContent>
         </Card>
 
-        {/* FORMULARIO NUEVO CONTACTO */}
-        <Card className="bg-white rounded-lg shadow-md border-slate-200">
+        {/* FORMULARIO NUEVO / EDITAR CONTACTO */}
+        <Card className={`bg-white rounded-lg shadow-md border-slate-200 ${modoEdicion ? "ring-2 ring-amber-400" : ""}`}>
           <CardHeader className="px-3 py-2">
-            <CardTitle className="text-sm font-semibold text-slate-800 border-b pb-1.5">
-              Nuevo Contacto
+            <CardTitle className="text-sm font-semibold text-slate-800 border-b pb-1.5 flex items-center justify-between">
+              <span className={`flex items-center gap-1.5 ${modoEdicion ? "text-amber-600" : ""}`}>
+                {modoEdicion && <Pencil className="h-3.5 w-3.5" />}
+                {modoEdicion ? `Actualizar Contacto #${idContactoEditando}` : "Nuevo Contacto"}
+              </span>
+              {modoEdicion && (
+                <button
+                  type="button"
+                  onClick={handleCancelarEdicion}
+                  className="text-slate-400 hover:text-red-500 transition-colors"
+                  title="Cancelar edición"
+                >
+                  <XCircle className="h-4 w-4" />
+                </button>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="px-3 pt-1.5 pb-2">
@@ -637,14 +713,22 @@ export default function ContactosPage() {
               type="submit"
               form="nuevo-contacto-form"
               disabled={guardando}
-              className="w-full bg-primary hover:bg-primary/80 text-primary-foreground flex items-center justify-center gap-1.5 h-8 text-xs"
+              className={`w-full flex items-center justify-center gap-1.5 h-8 text-xs text-white ${
+                modoEdicion
+                  ? "bg-amber-500 hover:bg-amber-600"
+                  : "bg-primary hover:bg-primary/80 text-primary-foreground"
+              }`}
             >
               {guardando ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : modoEdicion ? (
+                <Pencil className="h-4 w-4" />
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              {guardando ? "Guardando..." : "Guardar Contacto"}
+              {guardando
+                ? modoEdicion ? "Actualizando..." : "Guardando..."
+                : modoEdicion ? "Actualizar Contacto" : "Guardar Contacto"}
             </Button>
           </CardFooter>
         </Card>
@@ -835,9 +919,22 @@ export default function ContactosPage() {
                     </TableRow>
                   ) : (
                     contactosPaginados.map((contacto) => (
-                      <TableRow key={contacto.id} className="hover:bg-slate-50/50">
+                      <TableRow
+                        key={contacto.id}
+                        onClick={() => handleSeleccionarContacto(contacto)}
+                        className={`cursor-pointer transition-colors ${
+                          idContactoEditando === contacto.id
+                            ? "bg-amber-50 hover:bg-amber-100 ring-1 ring-inset ring-amber-300"
+                            : "hover:bg-slate-50/50"
+                        }`}
+                      >
                         <TableCell className="text-xs py-2 font-medium text-slate-600">
-                          {contacto.id}
+                          <span className="flex items-center gap-1">
+                            {idContactoEditando === contacto.id && (
+                              <Pencil className="h-3 w-3 text-amber-500 shrink-0" />
+                            )}
+                            {contacto.id}
+                          </span>
                         </TableCell>
                         <TableCell className="text-xs py-2 font-semibold text-slate-800">
                           {contacto.nombre_Completo}
